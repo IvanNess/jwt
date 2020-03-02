@@ -177,6 +177,9 @@ app.post('/',
         passport.authenticate('local', async (err, user, done) => {
             console.log('user', user)
             //res.append('user', user)
+            if(!user){
+                return res.send('Incorrect user or password.')
+            }
             const fingerprint = req.body.fingerprint
             const { access, refresh } = createTokens({ userId: user._id, fingerprint, accessSecLifeTime: 60, refreshMillisecLifeTime: 6 * 60 * 1000, SECRET, Refresh })
             await refresh.save()

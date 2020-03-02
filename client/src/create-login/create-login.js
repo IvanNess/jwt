@@ -1,23 +1,21 @@
-import React, { useState, useEffect } from 'react'
-import axios from 'axios'
+import React, { useState, useEffect, useContext } from 'react'
 
-import useRequest from '../hooks/useRequest'
 import { getFingerprint } from '../utilities'
+import {Context} from '../context'
 
 const CreateLogin = () => {
     const [username, setUsername] = useState('')
     const [password, setPassword] = useState('')
-    const [{ error, loading, response }, setRequest] = useRequest('http://localhost:4000/create')
+    const [{error, loading, responseData}, dispatch] = useContext(Context)
     useEffect(() => {
-        if(!response) return
-        console.log(response.data)
-        if (response.data === 'Username is not available. Lets try another name.') {
-            return
+        if(!responseData) return
+        if (responseData === 'Incorrect user or password.') {
+            return console.log('Incorrect user or password.')
         }
-        localStorage.setItem('access', response.data.access)
-        localStorage.setItem('refresh', response.data.refresh)
-        //    document.location.href = 'http://localhost:3000/profile'
-    }, [response])
+        localStorage.setItem('access', responseData.access)
+        localStorage.setItem('refresh', responseData.refresh)
+        document.location.href = 'http://localhost:3000/profile'
+    }, [responseData])
     if (error) return <div>Error: {error}</div>
     if (loading) return <div>Loading...</div>
     return (
@@ -43,27 +41,8 @@ const CreateLogin = () => {
             <br />
             <button
                 onClick={async () => {
-                    console.log('create')
-                    console.log('data', username, password)
                     const fingerprint = await getFingerprint()
-                    console.log('fingerprint')
-                    console.log('fingerprint', fingerprint)
-                    // axios('http://localhost:4000/create', {
-                    //     method: 'post',
-                    //     data: { password, username, t: 1, fingerprint }
-                    // }).then(res => {
-                    //     console.log(res.data)
-                    //     if (res.data === 'Username is not available. Lets try another name.') {
-                    //         return
-                    //     }
-                    //     localStorage.setItem('access', res.data.access)
-                    //     localStorage.setItem('refresh', res.data.refresh)
-                    //     document.location.href = 'http://localhost:3000/profile'
-                    // })
-                    setRequest({
-                        method: 'post',
-                        data: { password, username, t: 1, fingerprint }
-                    })
+                    dispatch({type: 'CREATE', payload: { password, username, fingerprint } })
                 }}
             >
                 Отправить Данные
