@@ -56,7 +56,11 @@ const asyncDispatch = dispatch => async ({ type, payload }) => {
                     })
                     console.log('refresh res', response)
                     if (response.data === 'refresh is out of date or missmatched fingerprint' || response.data === 'refresh is invalid') {
-                        document.location.href = `http://localhost:3000/login`
+                        if(payload.fromLoginPage){
+                            return dispatch({ type: 'RESPONSE', payload: {responseData: 'No user yet.'} })
+                        } else{
+                            document.location.href = `http://localhost:3000/login`
+                        }
                     } else if (response.data.message && response.data.message === 'refresh is valid and updated') {
                         localStorage.setItem('access', response.data.access)
                         localStorage.setItem('refresh', response.data.refresh)

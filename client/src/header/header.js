@@ -1,6 +1,8 @@
 import React, { useContext, useEffect } from 'react'
+import * as R from 'ramda'
 
 import { Context } from '../context'
+import { Redirect } from 'react-router-dom'
 
 const withAuth = Wrapped => ( props ) => {
     const [{ user, loading, error }, dispatch] = useContext(Context)
@@ -17,6 +19,10 @@ const withAuth = Wrapped => ( props ) => {
         return <div>Error...{error}</div>
     if (loading || !user)
         return <div>Loading...</div>
+    if (!user.role || !R.includes('user', user.role)){
+        sessionStorage.removeItem('originPath')
+        return <Redirect to='/noauth'/>
+    }
     sessionStorage.removeItem('originPath')
 
     return (

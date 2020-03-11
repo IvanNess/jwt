@@ -8,48 +8,50 @@ const LoginPage = (props) => {
     const [username, setUsername] = useState('')
     const [password, setPassword] = useState('')
     const [redirect, setRedirect] = useState(false)
-    const [{ error, loading, responseData, pathname }, dispatch] = useContext(Context)
+    const [{ error, loading, responseData, user }, dispatch] = useContext(Context)
     console.log('login page props', props)
-    useEffect( () => {
-        console.log(responseData)
-        if (responseData === 'Incorrect user or password.') {
-            localStorage.setItem('access', responseData.access)
-            localStorage.setItem('refresh', responseData.refresh)
-            return
+    // useEffect( () => {
+    //     console.log(responseData)
+    //     if (responseData === 'Incorrect user or password.') {
+    //         localStorage.setItem('access', responseData.access)
+    //         localStorage.setItem('refresh', responseData.refresh)
+    //         return
+    //     }
+    //     if (!responseData) 
+    //         return
+    //     console.log('after')
+    //     localStorage.setItem('access', responseData.access)
+    //     localStorage.setItem('refresh', responseData.refresh)
+    //     setRedirect(true)
+    // }, [responseData])
+    useEffect(() => {
+        if (!user) {
+            dispatch({ type: 'GET_PROFILE', payload: { fromLoginPage: true } })
         }
-        if (!responseData) return
-        console.log('after')
+    }, [])
+
+    if (responseData === 'No user yet.') {
+        console.log('no user yet.')
+    } else if (responseData === 'Incorrect user or password.') {
         localStorage.setItem('access', responseData.access)
         localStorage.setItem('refresh', responseData.refresh)
-        //document.location.href = 'http://localhost:3000/profile'
-        setRedirect(true)
-        //dispatch({type: 'LOADING'})
-        //props.history.goBack()
-    }, [responseData])
+    } else if (responseData) {
+        console.log('after', responseData)
+        if (responseData.message !== 'access allowed') {
+            localStorage.setItem('access', responseData.access)
+            localStorage.setItem('refresh', responseData.refresh)
+        }
+        const originPath = sessionStorage.getItem('originPath') ? sessionStorage.getItem('originPath') : '/profile'
+        return <Redirect to={originPath} />
+    } else if (!responseData) {
+        console.log('no response data')
+        return <div>Loading....</div>
+    }
 
-    // console.log(responseData)
-    // if (responseData === 'Incorrect user or password.') {
-    //     localStorage.setItem('access', responseData.access)
-    //     localStorage.setItem('refresh', responseData.refresh)
-    // }
-    // if (responseData) {
-    //     console.log('after', responseData)
-    //     localStorage.setItem('access', responseData.access)
-    //     localStorage.setItem('refresh', responseData.refresh)
-    //     console.log('login page localstorage', localStorage)
-    //     console.log(pathname)
-
-    //     return <Redirect to={pathname? pathname: '/profile'} />
-    // }
     if (error) return <div>Error: {error}</div>
     if (loading) return <div>Loading....</div>
-    if (redirect) {
-        console.log('login page redirect props', props)
-        //props.history.goBack()
-        const originPath = sessionStorage.getItem('originPath')? sessionStorage.getItem('originPath'): '/profile' 
-        //localStorage.removeItem('originPath')
-        return <Redirect to={originPath} />
-    }
+    if (user) return <Redirect to='/profile' />
+
     return (
         <div>
             Login Page
