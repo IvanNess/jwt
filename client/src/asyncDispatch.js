@@ -3,10 +3,11 @@ import axios from 'axios'
 import { getFingerprint } from './utilities'
 
 const asyncDispatch = dispatch => async ({ type, payload }) => {
+    console.log('async dispatch', payload)
     let response;
     switch (type) {
         case 'CREATE':
-            const { password, username, fingerprint } = payload
+            const { password, username, fingerprint, pathname } = payload
             dispatch({ type: 'LOADING' })
             try {
                 response = await axios('http://localhost:4000/create', {
@@ -14,13 +15,13 @@ const asyncDispatch = dispatch => async ({ type, payload }) => {
                     data: { password, username, fingerprint }
                 })
                 console.log('async dispatch response', response)
-                return dispatch({ type: 'RESPONSE', payload: response.data })
+                return dispatch({ type: 'RESPONSE', payload: {responseData: response.data, pathname } })
             }
             catch (err) {
                 return dispatch({ type: 'ERROR', payload: err })
             }
         case 'LOGIN':
-            const { password: loginPassword, username: loginUsername, fingerprint: loginFingerprint } = payload
+            const { password: loginPassword, username: loginUsername, fingerprint: loginFingerprint, pathname: loginPathname } = payload
             dispatch({ type: 'LOADING' })
             try {
                 response = await axios('http://localhost:4000', {
@@ -28,7 +29,7 @@ const asyncDispatch = dispatch => async ({ type, payload }) => {
                     data: { password: loginPassword, username: loginUsername, fingerprint: loginFingerprint }
                 })
                 console.log('async dispatch response', response)
-                return dispatch({ type: 'RESPONSE', payload: response.data })
+                return dispatch({ type: 'RESPONSE', payload: {responseData: response.data, pathname: loginPathname } })
             }
             catch (err) {
                 return dispatch({ type: 'ERROR', payload: err })
@@ -36,6 +37,7 @@ const asyncDispatch = dispatch => async ({ type, payload }) => {
         case 'GET_PROFILE':
             dispatch({ type: 'LOADING' })
             try {
+                console.log('access from localstorage', localStorage.getItem('access'))
                 response = await axios('http://localhost:4000/profile', {
                     method: 'post',
                     data: {
@@ -43,7 +45,7 @@ const asyncDispatch = dispatch => async ({ type, payload }) => {
                     }
                 })
                 console.log('async dispatch response', response)
-                if (response.data === 'access denied') {
+                if (response.data.message === 'access denied') {
                     const fingerprint = await getFingerprint()
                     response = await axios('http://localhost:4000/refresh', {
                         method: 'post',
@@ -54,13 +56,14 @@ const asyncDispatch = dispatch => async ({ type, payload }) => {
                     })
                     console.log('refresh res', response)
                     if (response.data === 'refresh is out of date or missmatched fingerprint' || response.data === 'refresh is invalid') {
-                        document.location.href = 'http://localhost:3000/login'
+                        document.location.href = `http://localhost:3000/login`
                     } else if (response.data.message && response.data.message === 'refresh is valid and updated') {
                         localStorage.setItem('access', response.data.access)
                         localStorage.setItem('refresh', response.data.refresh)
                     }
                 }
-                return dispatch({ type: 'RESPONSE', payload: response.data })
+                console.log('before async dispatch', payload)
+                return dispatch({ type: 'RESPONSE', payload: {responseData: response.data} })
             } catch (err) {
                 return dispatch({ type: 'ERROR', payload: err })
             }

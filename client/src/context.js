@@ -6,6 +6,7 @@ import asyncDispatch from './asyncDispatch'
 const Context = createContext([{}, ()=>{}])
 
 const initState = {
+    user: null,
     responseData: null,
     loading: false,
     error: null

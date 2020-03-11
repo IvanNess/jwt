@@ -1,13 +1,16 @@
 import React, { useState, useContext, useEffect } from 'react'
+import { Redirect } from 'react-router-dom'
 
 import { getFingerprint } from '../utilities'
 import { Context } from '../context'
 
-const LoginPage = () => {
+const LoginPage = (props) => {
     const [username, setUsername] = useState('')
     const [password, setPassword] = useState('')
-    const [{ error, loading, responseData }, dispatch] = useContext(Context)
-    useEffect(() => {
+    const [redirect, setRedirect] = useState(false)
+    const [{ error, loading, responseData, pathname }, dispatch] = useContext(Context)
+    console.log('login page props', props)
+    useEffect( () => {
         console.log(responseData)
         if (responseData === 'Incorrect user or password.') {
             localStorage.setItem('access', responseData.access)
@@ -18,10 +21,35 @@ const LoginPage = () => {
         console.log('after')
         localStorage.setItem('access', responseData.access)
         localStorage.setItem('refresh', responseData.refresh)
-        document.location.href = 'http://localhost:3000/profile'
+        //document.location.href = 'http://localhost:3000/profile'
+        setRedirect(true)
+        //dispatch({type: 'LOADING'})
+        //props.history.goBack()
     }, [responseData])
+
+    // console.log(responseData)
+    // if (responseData === 'Incorrect user or password.') {
+    //     localStorage.setItem('access', responseData.access)
+    //     localStorage.setItem('refresh', responseData.refresh)
+    // }
+    // if (responseData) {
+    //     console.log('after', responseData)
+    //     localStorage.setItem('access', responseData.access)
+    //     localStorage.setItem('refresh', responseData.refresh)
+    //     console.log('login page localstorage', localStorage)
+    //     console.log(pathname)
+
+    //     return <Redirect to={pathname? pathname: '/profile'} />
+    // }
     if (error) return <div>Error: {error}</div>
-    if (loading) return <div>Loading...</div>
+    if (loading) return <div>Loading....</div>
+    if (redirect) {
+        console.log('login page redirect props', props)
+        //props.history.goBack()
+        const originPath = sessionStorage.getItem('originPath')? sessionStorage.getItem('originPath'): '/profile' 
+        //localStorage.removeItem('originPath')
+        return <Redirect to={originPath} />
+    }
     return (
         <div>
             Login Page
@@ -45,7 +73,8 @@ const LoginPage = () => {
             <br />
             <button
                 onClick={async () => {
-                    dispatch({ type: 'LOGIN', payload: { password, username, t: 1, fingerprint: await getFingerprint() } })
+                    const pathname = responseData && responseData.pathname || window.location.pathname
+                    dispatch({ type: 'LOGIN', payload: { password, username, pathname: pathname ? pathname : null, fingerprint: await getFingerprint() } })
 
                     // console.log('data', username, password)
                     // axios('http://localhost:4000', {

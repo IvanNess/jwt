@@ -1,9 +1,12 @@
-import React from 'react'
+import React, {useContext} from 'react'
 import LoginPage from './login-page'
-import { BrowserRouter as Router, Route } from 'react-router-dom'
+import { BrowserRouter as Router, Route, Switch } from 'react-router-dom'
 import ProfilePage from './profile-page'
 import CreateLogin from './create-login'
-import { ContextProvider } from './context'
+import { ContextProvider, Context } from './context'
+import Header from './header'
+import AuthChecker from './auth-checker'
+
 
 function App() {
   return (
@@ -12,17 +15,20 @@ function App() {
         <Router>
           <Route exact path='/'>
             Hello world!!!
-          </Route>
-          <Route exact path='/login'>
-            <LoginPage />
-          </Route>
+            </Route>
+          <Route exact path='/login' component={LoginPage} />
           <Route exact path='/create'>
             <CreateLogin />
           </Route>
-          <Route exact path='/profile'>
+          <Route exact path='/profile' role={['user']}>
             <ProfilePage />
           </Route>
+
+          <Switch>
+            <Route path='/user/:slug' component={Header} />
+          </Switch>
         </Router>
+
       </ContextProvider>
     </div>
   )

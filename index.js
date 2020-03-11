@@ -4,6 +4,7 @@ const bodyParser = require('body-parser')
 var jwt = require('jsonwebtoken')
 let passport = require('passport')
 let LocalStrategy = require('passport-local').Strategy
+const R = require('ramda')
 
 const mongoose = require('mongoose')
 mongoose.Promise = require('bluebird')
@@ -51,8 +52,22 @@ passport.use(new JwtStrategy(opts, function (jwt_payload, done) {
     console.log('jwt', jwt_payload)
     if (jwt_payload) {
         console.log('jwt', jwt_payload)
-        return done(null, jwt_payload)
+
+        User.findUserById(jwt_payload.userId, function (err, user) {
+            console.log('jwt found user', user)
+            if (err) {
+                return done(err, false);
+            }
+            if (user) {
+                return done(null, user);
+            } else {
+                return done(null, false);
+                // or you could create a new account
+            }
+        });
+        //return done(null, jwt_payload)
     }
+
     // User.findOne({id: jwt_payload.sub}, function(err, user) {
     //     if (err) {
     //         return done(err, false);
@@ -111,11 +126,12 @@ app.post('/profile',
     (req, res, next) => {
         console.log('get profile', req.body.access)
         const refreshId = req.body.refresh
-        passport.authenticate('jwt', (err, token, next) => {
-            if (!token || err) {
-                res.send('access denied')
+        passport.authenticate('jwt', (err, user, next) => {
+            console.log('jwt authenticate', err, user)
+            if (!user || err) {
+                res.send({ message: 'access denied' })
             } else {
-                res.send('access allowed')
+                res.send({ message: 'access allowed', user })
             }
         })(req, res, next)
     }
@@ -138,13 +154,20 @@ app.post('/refresh', async (req, res, next) => {
             const { access: newAccess, refresh: newRefresh } = createTokens({ userId: refresh.userId, accessSecLifeTime: 60, refreshMillisecLifeTime: 6 * 60 * 1000, fingerprint, SECRET, Refresh })
             await newRefresh.save()
             //отправить рефрэш и эксэс токен в респонсе
-            Refresh.findByIdAndDelete(refreshId, (err, res)=>{
+            Refresh.findByIdAndDelete(refreshId, (err, res) => {
                 console.log('deleted', err, res)
             })
-            res.send({
-                access: newAccess,
-                refresh: newRefresh._id,
-                message: 'refresh is valid and updated'
+            User.findUserById(refresh.userId, (err, user) => {
+                if (err) {
+                    res.send({ message: err })
+                } else if (user) {
+                    res.send({
+                        access: newAccess,
+                        refresh: newRefresh._id,
+                        user,
+                        message: 'refresh is valid and updated'
+                    })
+                }
             })
         } else {
             Refresh.findByIdAndDelete(refreshId)
@@ -177,7 +200,7 @@ app.post('/',
         passport.authenticate('local', async (err, user, done) => {
             console.log('user', user)
             //res.append('user', user)
-            if(!user){
+            if (!user) {
                 return res.send('Incorrect user or password.')
             }
             const fingerprint = req.body.fingerprint
@@ -204,8 +227,8 @@ app.post('/',
 app.post('/create', async (req, res, next) => {
     console.log('create', req.body)
     const user = req.body
-    const dbUsernameCheck = await User.findOne({'username': req.body.username})
-    if(dbUsernameCheck){
+    const dbUsernameCheck = await User.findOne({ 'username': req.body.username })
+    if (dbUsernameCheck) {
         return res.send('Username is not available. Lets try another name.')
     }
     new User({ ...user }).save(async (err, user) => {

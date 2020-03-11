@@ -4,17 +4,19 @@ import {Context} from '../context'
 
 
 const ProfilePage = () => {
-    const [{error, loading, responseData}, dispatch] = useContext(Context)
-    console.log('profile page', responseData)
+    const [{error, loading, responseData, user}, dispatch] = useContext(Context)
+    console.log('profile page', responseData, user)
+    console.log('profile page localstorage', localStorage)
     useEffect(()=>{
         //console.log(responseData)
-        dispatch({type:'GET_PROFILE'})
+        const pathname = responseData && responseData.pathname || window.location.pathname
+        dispatch({type:'GET_PROFILE', payload: {pathname}})
     }, [])
     // useEffect(()=>{
     //     dispatch({type:'GET_PROFILE'})
     // }, [responseData])
     if (error) return <div>Error: {error}</div>
-    if (loading) return <div>Loading...</div>
+    if (loading || !user) return <div>Loading...</div>
 
     // axios('http://localhost:4000/profile', {
     //     method: 'post',
@@ -42,7 +44,6 @@ const ProfilePage = () => {
     //         })
     //     }
     // })
-
     return (
         <div>
             ProfilePage

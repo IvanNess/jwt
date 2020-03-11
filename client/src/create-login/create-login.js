@@ -7,11 +7,13 @@ const CreateLogin = () => {
     const [username, setUsername] = useState('')
     const [password, setPassword] = useState('')
     const [{error, loading, responseData}, dispatch] = useContext(Context)
+    console.log('create page')
     useEffect(() => {
         if(!responseData) return
         if (responseData === 'Incorrect user or password.') {
             return console.log('Incorrect user or password.')
         }
+        console.log('create-login response data', responseData)
         localStorage.setItem('access', responseData.access)
         localStorage.setItem('refresh', responseData.refresh)
         document.location.href = 'http://localhost:3000/profile'
@@ -42,7 +44,8 @@ const CreateLogin = () => {
             <button
                 onClick={async () => {
                     const fingerprint = await getFingerprint()
-                    dispatch({type: 'CREATE', payload: { password, username, fingerprint } })
+                    const pathname = responseData.pathname || window.location.pathname
+                    dispatch({type: 'CREATE', payload: { password, username, fingerprint, pathname } })
                 }}
             >
                 Отправить Данные
