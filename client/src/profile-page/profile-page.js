@@ -9,8 +9,10 @@ const ProfilePage = () => {
     console.log('profile page localstorage', localStorage)
     useEffect(()=>{
         //console.log(responseData)
-        const pathname = responseData && responseData.pathname || window.location.pathname
-        dispatch({type:'GET_PROFILE', payload: {pathname}})
+        // const pathname = responseData && responseData.pathname || window.location.pathname
+        // dispatch({type:'GET_PROFILE', payload: {pathname}})
+        dispatch({type:'GET_PROFILE', })
+
     }, [])
     // useEffect(()=>{
     //     dispatch({type:'GET_PROFILE'})

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react'
+import {Redirect} from 'react-router-dom'
 
 import { getFingerprint } from '../utilities'
 import {Context} from '../context'
@@ -6,20 +7,24 @@ import {Context} from '../context'
 const CreateLogin = () => {
     const [username, setUsername] = useState('')
     const [password, setPassword] = useState('')
-    const [{error, loading, responseData}, dispatch] = useContext(Context)
-    console.log('create page')
+    const [{ error, loading, responseData, user }, dispatch] = useContext(Context)
     useEffect(() => {
-        if(!responseData) return
-        if (responseData === 'Incorrect user or password.') {
-            return console.log('Incorrect user or password.')
+        if (!user) {
+            dispatch({ type: 'GET_PROFILE', payload: { fromLoginPage: true } })
         }
-        console.log('create-login response data', responseData)
-        localStorage.setItem('access', responseData.access)
-        localStorage.setItem('refresh', responseData.refresh)
-        document.location.href = 'http://localhost:3000/profile'
-    }, [responseData])
-    if (error) return <div>Error: {error}</div>
-    if (loading) return <div>Loading...</div>
+    }, [])
+    const search = document.location.search
+    const redirectUrlArr =search.match(/^\?redirectUrl=(\S*)$/)
+    const redirectUrl = redirectUrlArr? redirectUrlArr[1]: '/profile'
+    console.log('redirectUrl', redirectUrl)
+    console.log('response data', responseData)
+    console.log('user', user)
+    console.log('error', error)
+    if(user){
+        return <Redirect to={redirectUrl} />
+    }
+    if (error && error!=='No user yet.') return <div>Error: {error}</div>
+    if (!user && !error || loading) return <div>Loading....</div>
     return (
         <div>
             Login Page
@@ -44,8 +49,7 @@ const CreateLogin = () => {
             <button
                 onClick={async () => {
                     const fingerprint = await getFingerprint()
-                    const pathname = responseData.pathname || window.location.pathname
-                    dispatch({type: 'CREATE', payload: { password, username, fingerprint, pathname } })
+                    dispatch({type: 'CREATE', payload: { password, username, fingerprint } })
                 }}
             >
                 Отправить Данные

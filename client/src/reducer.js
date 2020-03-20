@@ -4,7 +4,7 @@ const reducer = (state, {type, payload}) =>{
         case 'RESPONSE':
             return{
                 ...state,
-                user: payload.responseData.user,
+                user: payload.responseData.user? payload.responseData.user: state.user, 
                 responseData: payload.responseData,
                 loading: false,
                 error: null
@@ -16,11 +16,12 @@ const reducer = (state, {type, payload}) =>{
                 error: null
             }
         case 'ERROR':
+            console.log('reducer error', payload)
             return {
                 ...state,
                 user: null,
                 loading: false,
-                error: payload.error
+                error: payload
             }
         default: {
                 return state

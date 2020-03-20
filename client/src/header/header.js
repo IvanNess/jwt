@@ -11,8 +11,8 @@ const withAuth = Wrapped => ( props ) => {
     useEffect(() => {
         console.log('with auth use effect')
         if (!user) {
-            sessionStorage.setItem('originPath', props.match.url)
-            dispatch({ type: 'GET_PROFILE'})
+            //sessionStorage.setItem('originPath', props.match.url)
+            dispatch({ type: 'GET_PROFILE', payload: {originPath: props.match.url}})
         }
     }, [])
     if (error)
@@ -20,10 +20,10 @@ const withAuth = Wrapped => ( props ) => {
     if (loading || !user)
         return <div>Loading...</div>
     if (!user.role || !R.includes('user', user.role)){
-        sessionStorage.removeItem('originPath')
+        //sessionStorage.removeItem('originPath')
         return <Redirect to='/noauth'/>
     }
-    sessionStorage.removeItem('originPath')
+    //sessionStorage.removeItem('originPath')
 
     return (
         <Wrapped {...props} />

@@ -4,10 +4,12 @@ import { Redirect } from 'react-router-dom'
 import { getFingerprint } from '../utilities'
 import { Context } from '../context'
 
+import './login-page.css'
+import loginImage from './login-image.png'
+
 const LoginPage = (props) => {
     const [username, setUsername] = useState('')
     const [password, setPassword] = useState('')
-    const [redirect, setRedirect] = useState(false)
     const [{ error, loading, responseData, user }, dispatch] = useContext(Context)
     console.log('login page props', props)
     // useEffect( () => {
@@ -29,33 +31,42 @@ const LoginPage = (props) => {
             dispatch({ type: 'GET_PROFILE', payload: { fromLoginPage: true } })
         }
     }, [])
-
-    if (responseData === 'No user yet.') {
-        console.log('no user yet.')
-    } else if (responseData === 'Incorrect user or password.') {
-        localStorage.setItem('access', responseData.access)
-        localStorage.setItem('refresh', responseData.refresh)
-    } else if (responseData) {
-        console.log('after', responseData)
-        if (responseData.message !== 'access allowed') {
-            localStorage.setItem('access', responseData.access)
-            localStorage.setItem('refresh', responseData.refresh)
-        }
-        const originPath = sessionStorage.getItem('originPath') ? sessionStorage.getItem('originPath') : '/profile'
-        return <Redirect to={originPath} />
-    } else if (!responseData) {
-        console.log('no response data')
-        return <div>Loading....</div>
+    const search = document.location.search
+    const redirectUrlArr =search.match(/^\?redirectUrl=(\S*)$/)
+    const redirectUrl = redirectUrlArr? redirectUrlArr[1]: '/profile'
+    console.log('redirectUrl', redirectUrl)
+    console.log('response data', responseData)
+    console.log('user', user)
+    console.log('error', error)
+    if(user){
+        return <Redirect to={redirectUrl} />
     }
+    if (error && error!=='No user yet.') return <div>Error: {error}</div>
+    if (!user && !error || loading) return <div>Loading....</div>
+    //if (user) return <Redirect to='/profile' />
 
-    if (error) return <div>Error: {error}</div>
-    if (loading) return <div>Loading....</div>
-    if (user) return <Redirect to='/profile' />
+    // if (responseData === 'No user yet.') {
+    //     console.log('no user yet.')
+    // } else if (responseData === 'Incorrect user or password.') {
+    //     localStorage.setItem('access', responseData.access)
+    //     localStorage.setItem('refresh', responseData.refresh)
+    // } else if (responseData) {
+    //     console.log('after', responseData)
+    //     if (responseData.message !== 'access allowed') {
+    //         localStorage.setItem('access', responseData.access)
+    //         localStorage.setItem('refresh', responseData.refresh)
+    //     }
+    //     return <Redirect to={redirectUrl} />
+    // } else if (!responseData) {
+    //     console.log('no response data')
+    //     return <div>Loading....</div>
+    // }
 
     return (
         <div>
             Login Page
             <input
+                className='login-page-username'
                 type='text'
                 placeholder='username'
                 onChange={(e) => {
@@ -74,6 +85,7 @@ const LoginPage = (props) => {
             password
             <br />
             <button
+                className='login-page-button'
                 onClick={async () => {
                     const pathname = responseData && responseData.pathname || window.location.pathname
                     dispatch({ type: 'LOGIN', payload: { password, username, pathname: pathname ? pathname : null, fingerprint: await getFingerprint() } })
@@ -92,6 +104,9 @@ const LoginPage = (props) => {
             >
                 Отправить Данные
             </button>
+            <div className='login-page-div'>
+                <img className='login-page-image' src={loginImage}/>
+            </div>
         </div>
     )
 }

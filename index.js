@@ -129,9 +129,9 @@ app.post('/profile',
         passport.authenticate('jwt', (err, user, next) => {
             console.log('jwt authenticate', err, user)
             if (!user || err) {
-                res.send({ message: 'access denied' })
+                res.status(401).send({ message: 'access denied' })
             } else {
-                res.send({ message: 'access allowed', user })
+                res.status(200).send({ message: 'access allowed', user })
             }
         })(req, res, next)
     }
@@ -153,29 +153,28 @@ app.post('/refresh', async (req, res, next) => {
         if (refresh.fingerprint === fingerprint && now <= refresh.expiresIn) {
             const { access: newAccess, refresh: newRefresh } = createTokens({ userId: refresh.userId, accessSecLifeTime: 60, refreshMillisecLifeTime: 6 * 60 * 1000, fingerprint, SECRET, Refresh })
             await newRefresh.save()
-            //отправить рефрэш и эксэс токен в респонсе
-            Refresh.findByIdAndDelete(refreshId, (err, res) => {
-                console.log('deleted', err, res)
-            })
-            User.findUserById(refresh.userId, (err, user) => {
-                if (err) {
-                    res.send({ message: err })
-                } else if (user) {
-                    res.send({
-                        access: newAccess,
-                        refresh: newRefresh._id,
-                        user,
-                        message: 'refresh is valid and updated'
-                    })
-                }
+            Refresh.findByIdAndDelete(refreshId, (err, deleted) => {
+                console.log('deleted', err, deleted)
+                User.updateRefreshIds({oldRefresh: refresh, newRefresh}, (err, user) => {
+                    if (err) {
+                        res.status(500).send({ message: err })
+                    } else if (user) {
+                        res.status(200).send({
+                            access: newAccess,
+                            refresh: newRefresh._id,
+                            user,
+                            message: 'refresh is valid and updated'
+                        })
+                    }
+                })
             })
         } else {
             Refresh.findByIdAndDelete(refreshId)
-            res.send('refresh is out of date or missmatched fingerprint')
+            res.status(401).send('refresh is out of date or missmatched fingerprint')
         }
     } catch (err) {
-        console.log(err)
-        res.send('refresh is invalid')
+        console.log('err', err)
+        res.status(401).send('refresh is invalid')
     }
 })
 
@@ -201,16 +200,23 @@ app.post('/',
             console.log('user', user)
             //res.append('user', user)
             if (!user) {
-                return res.send('Incorrect user or password.')
+                return res.status(401).send('Incorrect user or password.')
             }
             const fingerprint = req.body.fingerprint
             const { access, refresh } = createTokens({ userId: user._id, fingerprint, accessSecLifeTime: 60, refreshMillisecLifeTime: 6 * 60 * 1000, SECRET, Refresh })
             await refresh.save()
+            //сохранить в юзерский массив рефрэшей новый рефрэш. если их больше пяти, то удалить предыдущие.
+            //если удаляется рефрэш из юзерского массива, то он должен удалиться и из бд рефрэшей.
+            //проверить остальные рефрэши юзерского массива на актуальность и удалить истекшие рефреши.
             //отправить рефрэш и эксэс токен в респонсе
-            res.send({
-                access,
-                refresh: refresh._id
+            user.addRefresh(refresh._id, () => {
+                res.status(200).send({
+                    access,
+                    refresh: refresh._id,
+                    user
+                })
             })
+
             //res.redirect('http://localhost:3000')
             //next(null, token)
 
@@ -229,18 +235,21 @@ app.post('/create', async (req, res, next) => {
     const user = req.body
     const dbUsernameCheck = await User.findOne({ 'username': req.body.username })
     if (dbUsernameCheck) {
-        return res.send('Username is not available. Lets try another name.')
+        return res.status(403).send('Username is not available. Lets try another name.')
     }
-    new User({ ...user }).save(async (err, user) => {
+    new User({ ...user, refreshIds: [] }).save(async (err, user) => {
         const fingerprint = req.body.fingerprint
         console.log('user', user, user._id)
         const { access, refresh } = createTokens({ userId: user._id, fingerprint, SECRET, Refresh, accessSecLifeTime: 60, refreshMillisecLifeTime: 6 * 60 * 1000 })
         await refresh.save()
-        //отправить рефрэш и эксэс токен в респонсе
-        res.send({
-            access,
-            refresh: refresh._id
-        })
+        //сохраним рефрэш токен в юзерном массиве рефрэшей
+        user.addRefresh(refresh._id, () => { 
+            res.status(200).send({
+                access,
+                refresh: refresh._id,
+                user
+            })
+        })        
     })
 })
 
